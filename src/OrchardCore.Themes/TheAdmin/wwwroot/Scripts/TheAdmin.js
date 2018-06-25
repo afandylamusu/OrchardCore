@@ -6621,11 +6621,25 @@ $(function () {
 
 
 $('.leftbar-compactor').click(function () {
-    $('body').hasClass('left-sidebar-compact') ? unSetCompactStatus() : setCompactStatus();
+    $('body').hasClass('left-sidebar-compact') ? unSetCompactStatus() : setCompactStatus(true);
+});
+
+$('#left-nav li.has-items').click(function () {
+    $('#left-nav li.has-items').removeClass("visible");
+    $(this).addClass("visible");
+});
+
+$(document).on("click", function (event) {
+    var $trigger = $("#left-nav li.has-items");
+    if ($trigger !== event.target && !$trigger.has(event.target).length) {
+        $('#left-nav li.has-items').removeClass("visible");
+    }
 });
 
 
-function setCompactStatus() {
+var isCompactExplicit = (isCompactExplicit === undefined) ? false : isCompactExplicit ;
+
+function setCompactStatus(explicit) {
     // This if is to avoid that when sliding from expanded to compact the 
     // underliyng ul is visible while shrinking. It is ugly.    
     if (!$('body').hasClass('left-sidebar-compact')) {
@@ -6641,12 +6655,16 @@ function setCompactStatus() {
     // When leftbar is expanded  all ul tags are collapsed.
     // When leftbar is compacted we don't want the first level collapsed. 
     // We want it expanded so that hovering over the root buttons shows the full submenu
-    $('#left-nav ul.menu-admin > li > div > ul').removeClass('collapse');
+    $('#left-nav ul.menu-admin > li > ul').removeClass('collapse');
     // When hovering, don't want toggling when clicking on label
     $('#left-nav ul.menu-admin > li > label').attr('data-toggle', '');
     $('#left-nav').removeClass('ps');
     $('#left-nav').removeClass('ps--active-y'); // need this too because of Edge IE11
+    $('#left-nav li.has-items').removeClass("visible");
 
+    if (explicit == true) {
+        isCompactExplicit = explicit;
+    }
     persistAdminPreferences();
 }
 
@@ -6656,13 +6674,14 @@ function unSetCompactStatus() {
     $('body').removeClass('left-sidebar-compact');
 
     // resetting what we disabled for compact state
-    $('#left-nav ul.menu-admin > li > div > ul').addClass('collapse');    
+    $('#left-nav ul.menu-admin > li > ul').addClass('collapse');    
     $('#left-nav ul.menu-admin > li > label').attr('data-toggle', 'collapse');
     $('#left-nav').addClass('ps');
+    $('#left-nav li.has-items').removeClass("visible");
 
+    isCompactExplicit = false;
     persistAdminPreferences();
 }
-
 /*!
  * perfect-scrollbar v1.3.0
  * (c) 2017 Hyunje Jun
@@ -8125,7 +8144,9 @@ $(function () {
 
             if ((direction == "increasing") && (width > breakPoint)) {
                 // breakpoint reached while going up
-                // do what you think is needed here.  
+                if (isCompactExplicit == false) {
+                    unSetCompactStatus();
+                }
                 lastDirectionManaged = direction;
                 BreakpointChangeManaged = true;
             }
@@ -9421,7 +9442,7 @@ function persistAdminPreferences() {
     setTimeout(function () {
         var adminPreferences = {};        
         adminPreferences.leftSidebarCompact = $('body').hasClass('left-sidebar-compact') ? true : false;
-        
+        adminPreferences.isCompactExplicit = isCompactExplicit;
         localStorage.setItem('adminPreferences', JSON.stringify(adminPreferences));
     }, 200);
 }
